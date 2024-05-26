@@ -1,14 +1,13 @@
 using FitnessTracker.WebAPI.Data;
 using FitnessTracker.WebAPI.Models.Domain;
+using FitnessTracker.WebAPI.Repositories.Interfaces;
+using FitnessTracker.WebAPI.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -17,14 +16,28 @@ builder.Services.AddDbContext<FitnessTrackerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("FitnessTrackerConnectionString"));
 });
 
-builder.Services.AddIdentity<User, IdentityRole>()
+builder.Services.AddIdentityCore<User>()
     .AddEntityFrameworkStores<FitnessTrackerDbContext>()
     .AddDefaultTokenProviders()
-    .AddTokenProvider<DataProtectorTokenProvider<User>>("Fitness"); ;
+    .AddTokenProvider<DataProtectorTokenProvider<User>>("Fitness");
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+    options.Password.RequireDigit = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredUniqueChars = 1;
+});
+
+builder.Services.AddScoped<IAuthRepository, SQLAuthRepository>();
+builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
