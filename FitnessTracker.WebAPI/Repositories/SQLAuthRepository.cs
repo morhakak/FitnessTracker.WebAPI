@@ -13,11 +13,13 @@ namespace FitnessTracker.WebAPI.Repositories
     {
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly ITokenRepository _tokenRepository;
 
-        public SQLAuthRepository(UserManager<User> userManager, IConfiguration configuration)
+        public SQLAuthRepository(UserManager<User> userManager, IConfiguration configuration, ITokenRepository tokenRepository)
         {
             _userManager = userManager;
             _configuration = configuration;
+            _tokenRepository = tokenRepository;
         }
 
         public async Task<IdentityResult> RegisterUserAsync(RegisterUserDto registerUserDto)
@@ -43,7 +45,7 @@ namespace FitnessTracker.WebAPI.Repositories
                 return null;
             }
 
-            var token = GenerateJwtToken(existingUser);
+            var token = _tokenRepository.CreateJwtToken(existingUser);
 
             return token;
         }

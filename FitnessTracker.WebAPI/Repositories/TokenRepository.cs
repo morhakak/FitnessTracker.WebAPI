@@ -21,13 +21,8 @@ namespace FitnessTracker.WebAPI.Repositories
             {
                new(ClaimTypes.NameIdentifier,user.Id),
                new(ClaimTypes.Email, user.Email!),
+               new(ClaimTypes.Role, "User")
             };
-
-            //Todo:
-            //foreach (var role in user.Roles)
-            //{
-            //    claims.Add(new(ClaimTypes.Role, role));
-            //}
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
 

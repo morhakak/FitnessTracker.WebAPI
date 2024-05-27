@@ -46,6 +46,6 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid login attempt");
         }
 
-        return Ok($"{loginUserDto.Username} logged in successfully");
+        return Ok(token);
     }
 }
