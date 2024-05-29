@@ -363,5 +363,3 @@ MigrationBackup/
 FodyWeavers.xsd
 /FitnessTracker.WebAPI/appsettings.json
 /FitnessTracker.WebAPI/Properties/launchSettings.json
-
-/FitnessTracker.WebAPI/Migrations/*.cs
