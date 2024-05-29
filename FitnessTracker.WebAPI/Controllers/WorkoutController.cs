@@ -20,7 +20,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "AppUser")]
+    [Authorize(Roles = "User,Admin")]
     [ValidateModel]
     public async Task<ActionResult<Workout>> CreateWorkout([FromBody] CreateWorkoutRequest createWorkoutRequest)
     {
@@ -33,7 +33,8 @@ public class WorkoutController : ControllerBase
             WorkoutId = Guid.NewGuid(),
             UserId = userId!,
             Name = createWorkoutRequest.Name,
-            Date = DateTime.Now,
+            CreatedAt = DateTime.Now,
+            IsLiked = false,
             Exercises = createWorkoutRequest.Exercises.Select(e => new Exercise
             {
                 Name = e.Name,
@@ -50,6 +51,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<Workout>>> GetAllWorkouts()
     {
         var workouts = await _workoutRepository.GetAllWorkoutsAsync();
@@ -58,6 +60,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "User,Admin")]
     public async Task<ActionResult<Workout>> GetWorkoutById(Guid id)
     {
         var workout = await _workoutRepository.GetWorkoutByIdAsync(id);
@@ -67,31 +70,34 @@ public class WorkoutController : ControllerBase
         return Ok(workout);
     }
 
+    [Authorize]
     [HttpGet("user/{userId}")]
+    [Authorize(Roles = "User,Admin")]
     public async Task<ActionResult<List<Workout>>> GetAllWorkoutsByUserId()
     {
         var userId = GetUserId();
 
-        var workouts = await _workoutRepository.GetAllWorkoutsAsync();
+        var workouts = await _workoutRepository.GetAllWorkoutsByUserIdAsync(userId);
 
         return Ok(workouts);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateWorkout(Guid id, Workout workout)
+    [HttpPut("{workoutId}")]
+    [Authorize(Roles = "User,Admin")]
+    public async Task<IActionResult> UpdateWorkout(Guid workoutId, [FromBody] UpdateWorkoutDto updateWorkoutDto)
     {
-        var userId = GetUserId().ToString();
+        var result = await _workoutRepository.UpdateWorkoutAsync(workoutId, updateWorkoutDto);
 
-        if (id != workout.WorkoutId || workout.UserId != userId)
+        if (!result)
         {
-            return BadRequest();
+            return NotFound();
         }
 
-        await _workoutRepository.UpdateWorkoutAsync(workout);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "User,Admin")]
     public async Task<IActionResult> DeleteWorkout(Guid id)
     {
         var userId = GetUserId().ToString();

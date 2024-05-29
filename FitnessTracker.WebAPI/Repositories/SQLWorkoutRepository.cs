@@ -1,5 +1,6 @@
 ﻿using FitnessTracker.WebAPI.Data;
 using FitnessTracker.WebAPI.Models.Domain;
+using FitnessTracker.WebAPI.Models.DTOs.Workout;
 using FitnessTracker.WebAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -59,19 +60,78 @@ public class SQLWorkoutRepository : IWorkoutRepository
                              .FirstOrDefaultAsync(w => w.WorkoutId == id);
 
         return workout;
-       
     }
 
-    public async Task<Workout?> UpdateWorkoutAsync(Workout workout)
+    public async Task<bool> UpdateWorkoutAsync(Guid workoutId, UpdateWorkoutDto updateWorkoutDto)
     {
-        var existingWorkout = await _dbContext.Workouts.FindAsync(workout.WorkoutId);
+        var workout = await _dbContext.Workouts
+               .Include(w => w.Exercises)
+               .ThenInclude(e => e.Sets)
+               .FirstOrDefaultAsync(w => w.WorkoutId == workoutId);
 
-        if (existingWorkout == null) return null;
+        if (workout == null)
+        {
+            return false;
+        }
 
-        //create new workout and update it
+        workout.Name = updateWorkoutDto.Name;
+        workout.IsLiked = updateWorkoutDto.IsLiked;
+        workout.UpdatedAt = DateTime.UtcNow;
 
-       await _dbContext.SaveChangesAsync();
+        foreach (var updateExercise in updateWorkoutDto.Exercises)
+        {
+            Exercise exercise;
+            if (updateExercise.ExerciseId.HasValue)
+            {
+                exercise = workout.Exercises.FirstOrDefault(e => e.ExerciseId == updateExercise.ExerciseId.Value);
+                if (exercise == null)
+                {
+                    continue;
+                }
 
-        return null; //temp
+                exercise.Name = updateExercise.Name;
+            }
+            else
+            {
+                exercise = new Exercise
+                {
+                    ExerciseId = Guid.NewGuid(),
+                    Name = updateExercise.Name,
+                    WorkoutId = workout.WorkoutId
+                };
+                workout.Exercises.Add(exercise);
+            }
+
+            foreach (var updateSet in updateExercise.Sets)
+            {
+                Set set;
+                if (updateSet.SetId.HasValue)
+                {
+                    set = exercise.Sets.FirstOrDefault(s => s.SetId == updateSet.SetId.Value);
+                    if (set == null)
+                    {
+                        continue;
+                    }
+
+                    set.Reps = updateSet.Reps;
+                    set.Weight = updateSet.Weight;
+                }
+                else
+                {
+                    set = new Set
+                    {
+                        SetId = Guid.NewGuid(),
+                        Reps = updateSet.Reps,
+                        Weight = updateSet.Weight,
+                        ExerciseId = exercise.ExerciseId
+                    };
+                    exercise.Sets.Add(set);
+                }
+            }
+        }
+
+        _dbContext.Workouts.Update(workout);
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 }

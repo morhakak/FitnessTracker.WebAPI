@@ -8,8 +8,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -56,8 +54,13 @@ builder.Services.AddDbContext<FitnessTrackerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("FitnessTrackerConnectionString"));
 });
 
-builder.Services
-    .AddIdentityCore<User>()
+builder.Services.AddScoped<IAuthRepository, SQLAuthRepository>();
+builder.Services.AddScoped<IWorkoutRepository, SQLWorkoutRepository>();
+builder.Services.AddScoped<ITokenRepository, TokenRepository>();
+
+builder.Services.AddIdentityCore<User>()
+    .AddRoles<IdentityRole>()
+    .AddTokenProvider<DataProtectorTokenProvider<User>>("FitnessTracker")
     .AddEntityFrameworkStores<FitnessTrackerDbContext>()
     .AddDefaultTokenProviders();
 
@@ -72,10 +75,6 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequiredUniqueChars = 1;
 });
-
-builder.Services.AddScoped<IAuthRepository, SQLAuthRepository>();
-builder.Services.AddScoped<IWorkoutRepository, SQLWorkoutRepository>();
-builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => 

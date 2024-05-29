@@ -2,10 +2,6 @@
 using FitnessTracker.WebAPI.Models.DTOs.Auth;
 using FitnessTracker.WebAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace FitnessTracker.WebAPI.Repositories
 {
@@ -14,12 +10,14 @@ namespace FitnessTracker.WebAPI.Repositories
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
         private readonly ITokenRepository _tokenRepository;
+        private readonly ILogger<SQLAuthRepository> _logger;
 
-        public SQLAuthRepository(UserManager<User> userManager, IConfiguration configuration, ITokenRepository tokenRepository)
+        public SQLAuthRepository(UserManager<User> userManager, IConfiguration configuration, ITokenRepository tokenRepository, ILogger<SQLAuthRepository> logger)
         {
             _userManager = userManager;
             _configuration = configuration;
             _tokenRepository = tokenRepository;
+            _logger = logger;   
         }
 
         public async Task<IdentityResult> RegisterUserAsync(RegisterUserDto registerUserDto)
@@ -32,48 +30,51 @@ namespace FitnessTracker.WebAPI.Repositories
                 LastName = registerUserDto.LastName
             };
 
-            var result = await _userManager.CreateAsync(user, registerUserDto.Password);
-            return result;
+            var identityResult = await _userManager.CreateAsync(user, registerUserDto.Password);
+
+            if (!identityResult.Succeeded) 
+            {
+                _logger.LogError("User creation failed: {Errors}", string.Join(", ", identityResult.Errors.Select(e => e.Description)));
+             
+                return identityResult;
+            }
+
+            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+
+            if (!roleResult.Succeeded)
+            {
+                await _userManager.DeleteAsync(user);
+
+                _logger.LogError("Adding user to role failed: {Errors}", string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                return roleResult;
+            }
+
+            return IdentityResult.Success;
         }
 
-        public async Task<string?> LoginAsync(string username, string password)
+        public async Task<LoginResponseDto> LoginAsync(string username, string password)
         {
-           var existingUser =  await _userManager.FindByNameAsync(username);
+            var existingUser = await _userManager.FindByNameAsync(username);
 
-            if (existingUser == null || !await _userManager.CheckPasswordAsync(existingUser, password))
+            if (existingUser == null)
             {
-                return null;
+                _logger.LogWarning($"Login attempt failed: User '{username}' not found.");
+                return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
+            }
+
+            var passwordValid = await _userManager.CheckPasswordAsync(existingUser, password);
+
+            if (!passwordValid)
+            {
+                _logger.LogWarning($"Login attempt failed: Invalid username for user '{username}'.");
+                return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
             }
 
             var token = _tokenRepository.CreateJwtToken(existingUser);
 
-            return token;
-        }
+            _logger.LogInformation("User '{Username}' successfully logged in.", username);
 
-        private string GenerateJwtToken(User existingUser)
-        {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, existingUser.Id),
-                new Claim(ClaimTypes.Name, existingUser.UserName!),
-                new Claim(ClaimTypes.Email, existingUser.Email!),
-                //todo: add role
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = creds
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            return tokenHandler.WriteToken(token);
+            return new LoginResponseDto { IsSuccess = true, Token = token };
         }
     }
 }

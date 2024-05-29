@@ -39,13 +39,13 @@ public class AuthController : ControllerBase
     [ValidateModel]
     public async Task<IActionResult> Login([FromBody] LoginUserDto loginUserDto)
     {
-        var token = await _authRepository.LoginAsync(loginUserDto.Username, loginUserDto.Password);
+        var loginResponse = await _authRepository.LoginAsync(loginUserDto.Username, loginUserDto.Password);
 
-        if (token is null)
+        if (loginResponse.IsSuccess is not true)
         {
-            return Unauthorized("Invalid login attempt");
+            return Unauthorized(new { Message = loginResponse.ErrorMessage });
         }
 
-        return Ok(token);
+        return Ok(new { loginResponse.Token, Message = "Login successful" });
     }
 }

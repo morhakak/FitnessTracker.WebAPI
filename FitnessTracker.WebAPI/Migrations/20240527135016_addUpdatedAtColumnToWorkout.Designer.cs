@@ -4,6 +4,7 @@ using FitnessTracker.WebAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FitnessTracker.WebAPI.Migrations
 {
     [DbContext(typeof(FitnessTrackerDbContext))]
-    partial class FitnessTrackerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240527135016_addUpdatedAtColumnToWorkout")]
+    partial class addUpdatedAtColumnToWorkout
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,22 +195,6 @@ namespace FitnessTracker.WebAPI.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "661420f9-2a30-40cf-afa0-edc498392318",
-                            ConcurrencyStamp = "661420f9-2a30-40cf-afa0-edc498392318",
-                            Name = "admin",
-                            NormalizedName = "ADMIN"
-                        },
-                        new
-                        {
-                            Id = "743f9ebe-0fd5-4382-bf56-2baa0c34e80a",
-                            ConcurrencyStamp = "743f9ebe-0fd5-4382-bf56-2baa0c34e80a",
-                            Name = "user",
-                            NormalizedName = "USER"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
