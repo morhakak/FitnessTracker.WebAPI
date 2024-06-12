@@ -10,12 +10,19 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using FitnessTracker.WebAPI.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add logging configuration
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -101,6 +108,14 @@ builder.Services.AddAuthorization(auth =>
     .Build());
 });
 
+builder.Services.AddCors(policy => policy.AddPolicy("corsPolicy", build =>
+{
+    build
+    .WithOrigins(builder.Configuration["CorsOrigin"]!)
+    .AllowAnyMethod()
+    .AllowAnyHeader();
+}));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -108,6 +123,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("corsPolicy");
+
+var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+var logger = loggerFactory.CreateLogger("GlobalLogger");
+
+app.UseMiddleware<ExceptionHandlerMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 

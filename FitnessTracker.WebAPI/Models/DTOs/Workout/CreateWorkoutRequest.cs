@@ -6,6 +6,4 @@ public class CreateWorkoutRequest
 {
     [Required]
     public string Name { get; set; }
-    [Required]
-    public List<ExerciseDto> Exercises { get; set; } = new List<ExerciseDto>();
 }

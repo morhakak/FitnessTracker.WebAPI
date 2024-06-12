@@ -4,8 +4,7 @@ namespace FitnessTracker.WebAPI.Models.DTOs.Workout;
 
 public class SetDto
 {
-    [Required]
+    public Guid? SetId { get; set; }
     public int Reps { get; set; }
-    [Required]
     public double Weight { get; set; }
 }
