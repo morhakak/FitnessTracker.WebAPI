@@ -96,7 +96,8 @@ public class WorkoutController : ControllerBase
             {
                 ExerciseId = Guid.NewGuid(),
                 Name = exerciseDto.Name,
-                WorkoutId = workoutId
+                WorkoutId = workoutId,
+                CreatedAt = DateTime.Now.ToString()
             };
 
             await _workoutRepository.AddExerciseToWorkoutAsync(workoutId, exercise);
@@ -152,6 +153,7 @@ public class WorkoutController : ControllerBase
         {
             ExerciseId = addSetDto.ExerciseId,
             SetId = Guid.NewGuid(),
+            CreatedAt = DateTime.Now.ToString()
         };
 
        var result =  await _workoutRepository.AddSetToExerciseAsync(set, addSetDto);
@@ -203,8 +205,6 @@ public class WorkoutController : ControllerBase
 
         return Ok(workouts);
     }
-
-
 
     private Guid GetUserId()
     {

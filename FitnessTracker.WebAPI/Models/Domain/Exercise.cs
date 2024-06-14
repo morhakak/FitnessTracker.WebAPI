@@ -9,6 +9,7 @@ public class Exercise
     public Guid WorkoutId { get; set; }
     public string Name { get; set; }
     public List<Set> Sets { get; set; } = [];
+    public string CreatedAt { get; set; } = string.Empty;
 
     [JsonIgnore]
     public Workout Workout { get; set; }

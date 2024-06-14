@@ -57,105 +57,263 @@ public class SQLWorkoutRepository : IWorkoutRepository
 
     public async Task<List<Workout>?> GetAllWorkoutsAsync()
     {
-        var workouts =  await _dbContext.Workouts.ToListAsync();
-
+        var workouts =  await _dbContext.Workouts
+                               .Include(w => w.Exercises.OrderBy(e => e.CreatedAt))
+                               .ThenInclude(e => e.Sets.OrderBy(s => s.CreatedAt))
+                               .OrderBy(w => w.CreatedAt)
+                               .ToListAsync();
         return workouts;
     }
 
     public async Task<List<Workout>> GetAllWorkoutsByUserIdAsync(Guid userId)
     {
-        return await _dbContext.Workouts
-                             .Where(w => w.UserId == userId.ToString())
-                             .Include(w => w.Exercises)
-                             .ThenInclude(e => e.Sets)
-                             .ToListAsync();
+        var workouts = await _dbContext.Workouts
+                              .Where(w => w.UserId == userId.ToString())
+                              .Include(w => w.Exercises.OrderBy(e => e.CreatedAt)) 
+                              .ThenInclude(e => e.Sets.OrderBy(s => s.CreatedAt)) 
+                              .OrderBy(w => w.CreatedAt) 
+                              .ToListAsync();
+        return workouts;
     }
 
     public async Task<Workout?> GetWorkoutByIdAsync(Guid id)
     {
         var workout =  await _dbContext.Workouts
-                             .Include(w => w.Exercises)
-                             .ThenInclude(e => e.Sets)
-                             .FirstOrDefaultAsync(w => w.WorkoutId == id);
-
+                              .Where(w => w.WorkoutId == id)
+                              .Include(w => w.Exercises.OrderBy(e => e.CreatedAt))
+                              .ThenInclude(e => e.Sets.OrderBy(s => s.CreatedAt))
+                              .FirstOrDefaultAsync();
         return workout;
     }
 
+    //public async Task<bool> UpdateWorkoutAsync(Guid workoutId, UpdateWorkoutDto updateWorkoutDto)
+    //{
+
+    //    var workout = await _dbContext.Workouts
+    //        .Include(w => w.Exercises)
+    //        .ThenInclude(e => e.Sets)
+    //        .FirstOrDefaultAsync(w => w.WorkoutId == workoutId);
+
+    //    if (workout == null)
+    //    {
+    //        return false;
+    //    }
+
+    //    // Update properties
+    //    workout.Name = updateWorkoutDto.Name;
+    //    workout.IsLiked = updateWorkoutDto.IsLiked;
+    //    workout.UpdatedAt = updateWorkoutDto.UpdatedAt;
+
+    //    if (updateWorkoutDto.Exercises != null)
+    //    {
+    //        foreach (var updateExercise in updateWorkoutDto.Exercises)
+    //        {
+    //            Exercise exercise = null;
+    //            if (!string.IsNullOrEmpty(updateExercise.ExerciseId) && !updateExercise.ExerciseId.ToLower().Contains("temp"))// if exercise id !empty and !cotains the word temp
+    //            {
+    //                exercise = workout.Exercises.FirstOrDefault(e => e.ExerciseId.ToString() == updateExercise.ExerciseId);
+    //                if (exercise == null)
+    //                {
+    //                    continue;
+    //                }
+
+    //                exercise.Name = updateExercise.Name;
+    //            }
+    //            else if(string.IsNullOrEmpty(updateExercise.ExerciseId) || updateExercise.ExerciseId.ToLower().Contains("temp"))
+    //            {
+    //                exercise = new Exercise
+    //                {
+    //                    ExerciseId = Guid.NewGuid(),
+    //                    Name = updateExercise.Name,
+    //                    WorkoutId = workout.WorkoutId,
+    //                    CreatedAt = DateTime.Now.ToString()
+    //                };
+    //                workout.Exercises.Add(exercise);
+    //                _dbContext.Exercises.Add(exercise);
+    //            }
+
+    //            foreach (var updateSet in updateExercise.Sets)
+    //            {
+    //                Set set = null;
+    //                if (!string.IsNullOrEmpty(updateSet.SetId) && !updateSet.SetId.ToLower().Contains("temp"))
+    //                {
+    //                    set = exercise.Sets.FirstOrDefault(s => s.SetId.ToString() == updateSet.SetId);
+    //                    if (set == null)
+    //                    {
+    //                        continue;
+    //                    }
+
+    //                    set.Reps = updateSet.Reps;
+    //                    set.Weight = updateSet.Weight;
+    //                }
+    //                else if(string.IsNullOrEmpty(updateSet.SetId) || updateSet.SetId.ToLower().Contains("temp"))
+    //                {
+    //                    set = new Set
+    //                    {
+    //                        SetId = Guid.NewGuid(),
+    //                        Reps = updateSet.Reps,
+    //                        Weight = updateSet.Weight,
+    //                        ExerciseId = exercise.ExerciseId,
+    //                        CreatedAt = DateTime.Now.ToString()
+    //                    };
+    //                    exercise.Sets.Add(set);
+    //                    _dbContext.Sets.Add(set);
+    //                }
+    //            }
+    //        }
+    //    }
+
+    //    // Attach the original RowVersion value
+    //    //_dbContext.Entry(workout).Property(w => w.RowVersion).OriginalValue = updateWorkoutDto.RowVersion;
+
+    //    try
+    //    {
+    //        await _dbContext.SaveChangesAsync();
+    //    }
+    //    catch (DbUpdateConcurrencyException ex)
+    //    {
+    //        // Handle the concurrency exception as needed
+    //        throw new Exception("Concurrency exception occurred.", ex);
+    //    }
+
+    //    return true;
+    //}
+
     public async Task<bool> UpdateWorkoutAsync(Guid workoutId, UpdateWorkoutDto updateWorkoutDto)
     {
-        var workout = await _dbContext.Workouts
-            .Include(w => w.Exercises)
-            .ThenInclude(e => e.Sets)
-            .FirstOrDefaultAsync(w => w.WorkoutId == workoutId);
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-        if (workout == null)
+        try
         {
-            return false;
-        }
+            var workout = await _dbContext.Workouts
+                .Include(w => w.Exercises)
+                .ThenInclude(e => e.Sets)
+                .FirstOrDefaultAsync(w => w.WorkoutId == workoutId);
 
-        workout.Name = updateWorkoutDto.Name;
-        workout.IsLiked = updateWorkoutDto.IsLiked;
-        workout.UpdatedAt = updateWorkoutDto.UpdatedAt;
-
-        if (updateWorkoutDto.Exercises != null)
-        {
-            foreach (var updateExercise in updateWorkoutDto.Exercises)
+            if (workout == null)
             {
-                Exercise exercise;
-                if (updateExercise.ExerciseId.HasValue)
+                _logger.LogWarning($"Workout with ID {workoutId} not found.");
+                return false;
+            }
+
+            _logger.LogInformation($"Updating workout: {workoutId}");
+
+            // Update workout properties
+            workout.Name = updateWorkoutDto.Name;
+            workout.IsLiked = updateWorkoutDto.IsLiked;
+            workout.UpdatedAt = updateWorkoutDto.UpdatedAt;
+
+            if (updateWorkoutDto.Exercises != null)
+            {
+                var processedExerciseIds = new HashSet<Guid>();
+                var processedSetIds = new HashSet<Guid>();
+
+                // Handle exercises
+                foreach (var updateExercise in updateWorkoutDto.Exercises)
                 {
-                    exercise = workout.Exercises.FirstOrDefault(e => e.ExerciseId == updateExercise.ExerciseId.Value);
-                    if (exercise == null)
+                    Exercise exercise = null;
+
+                    if (!string.IsNullOrEmpty(updateExercise.ExerciseId) && !updateExercise.ExerciseId.ToLower().Contains("temp"))
                     {
-                        continue;
+                        exercise = workout.Exercises.FirstOrDefault(e => e.ExerciseId.ToString() == updateExercise.ExerciseId);
                     }
 
-                    exercise.Name = updateExercise.Name;
-                }
-                else
-                {
-                    exercise = new Exercise
+                    if (exercise == null)
                     {
-                        ExerciseId = Guid.NewGuid(),
-                        Name = updateExercise.Name,
-                        WorkoutId = workout.WorkoutId
-                    };
-                    workout.Exercises.Add(exercise);
-                }
-
-                foreach (var updateSet in updateExercise.Sets)
-                {
-                    Set set;
-                    if (updateSet.SetId.HasValue)
-                    {
-                        set = exercise.Sets.FirstOrDefault(s => s.SetId == updateSet.SetId.Value);
-                        if (set == null)
+                        exercise = new Exercise
                         {
-                            continue;
-                        }
-
-                        set.Reps = updateSet.Reps;
-                        set.Weight = updateSet.Weight;
+                            ExerciseId = Guid.NewGuid(),
+                            Name = updateExercise.Name,
+                            WorkoutId = workout.WorkoutId,
+                            CreatedAt = DateTime.Now.ToString(),
+                            Sets = new List<Set>()
+                        };
+                        workout.Exercises.Add(exercise);
+                        _dbContext.Exercises.Add(exercise);
+                        _logger.LogInformation($"Added new exercise: {exercise.ExerciseId}");
                     }
                     else
                     {
-                        set = new Set
-                        {
-                            SetId = Guid.NewGuid(),
-                            Reps = updateSet.Reps,
-                            Weight = updateSet.Weight,
-                            ExerciseId = exercise.ExerciseId
-                        };
-                        exercise.Sets.Add(set);
+                        exercise.Name = updateExercise.Name;
                     }
+
+                    processedExerciseIds.Add(exercise.ExerciseId);
+
+                    // Handle sets
+                    foreach (var updateSet in updateExercise.Sets)
+                    {
+                        Set set = null;
+
+                        if (!string.IsNullOrEmpty(updateSet.SetId) && !updateSet.SetId.ToLower().Contains("temp"))
+                        {
+                            set = exercise.Sets.FirstOrDefault(s => s.SetId.ToString() == updateSet.SetId);
+                        }
+
+                        if (set == null)
+                        {
+                            set = new Set
+                            {
+                                SetId = Guid.NewGuid(),
+                                Reps = updateSet.Reps,
+                                Weight = updateSet.Weight,
+                                ExerciseId = exercise.ExerciseId,
+                                CreatedAt = DateTime.Now.ToString()
+                            };
+                            exercise.Sets.Add(set);
+                            _dbContext.Sets.Add(set);
+                            _logger.LogInformation($"Added new set: {set.SetId}");
+                        }
+                        else
+                        {
+                            set.Reps = updateSet.Reps;
+                            set.Weight = updateSet.Weight;
+                        }
+
+                        processedSetIds.Add(set.SetId);
+                    }
+
+                    // Delete sets not in updateExercise.Sets
+                    var setsToRemove = exercise.Sets.Where(s => !processedSetIds.Contains(s.SetId)).ToList();
+                    foreach (var setToRemove in setsToRemove)
+                    {
+                        exercise.Sets.Remove(setToRemove);
+                        _dbContext.Sets.Remove(setToRemove);
+                        _logger.LogInformation($"Removed set: {setToRemove.SetId}");
+                    }
+
+                    processedSetIds.Clear(); // Clear processed sets for the next exercise
+                }
+
+                // Delete exercises not in updateWorkoutDto.Exercises
+                var exercisesToRemove = workout.Exercises.Where(e => !processedExerciseIds.Contains(e.ExerciseId)).ToList();
+                foreach (var exerciseToRemove in exercisesToRemove)
+                {
+                    workout.Exercises.Remove(exerciseToRemove);
+                    _dbContext.Exercises.Remove(exerciseToRemove);
+                    _logger.LogInformation($"Removed exercise: {exerciseToRemove.ExerciseId}");
                 }
             }
-        }
 
-        _dbContext.Workouts.Update(workout);
-        await _dbContext.SaveChangesAsync();
-        return true;
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation($"Workout {workoutId} updated successfully.");
+            return true;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError($"Concurrency exception for workout {workoutId}: {ex.Message}");
+            throw new Exception("Concurrency exception occurred.", ex);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError($"Error updating workout {workoutId}: {ex.Message}");
+            throw new Exception("An error occurred while updating the workout.", ex);
+        }
     }
+
 
     public async Task AddExerciseToWorkoutAsync(Guid workoutId, Exercise exercise)
     {
@@ -210,9 +368,9 @@ public class SQLWorkoutRepository : IWorkoutRepository
             // Update sets
             foreach (var updatedSet in updateExerciseDto.Sets)
             {
-                if (updatedSet.SetId.HasValue)
+                if (!string.IsNullOrEmpty(updatedSet.SetId) && !updatedSet.SetId.ToLower().Contains("temp"))
                 {
-                    var set = exercise.Sets.FirstOrDefault(s => s.SetId == updatedSet.SetId.Value);
+                    var set = exercise.Sets.FirstOrDefault(s => s.SetId.ToString() == updatedSet.SetId);
                     if (set != null)
                     {
                         set.Reps = updatedSet.Reps;
@@ -220,15 +378,16 @@ public class SQLWorkoutRepository : IWorkoutRepository
                     }
                     else
                     {
-                        _logger.LogInformation("Adding new set with provided SetId: {setId}", updatedSet.SetId.Value);
+                        _logger.LogInformation("Adding new set with provided SetId: {setId}", string.IsNullOrEmpty(updatedSet.SetId));
                         var newSet = new Set
                         {
-                            SetId = updatedSet.SetId.Value,
+                            SetId = Guid.NewGuid(),
                             ExerciseId = exerciseId,
                             Reps = updatedSet.Reps,
                             Weight = updatedSet.Weight
                         };
                         exercise.Sets.Add(newSet);
+                        _dbContext.Sets.Add(newSet);
                     }
                 }
                 else
@@ -242,10 +401,11 @@ public class SQLWorkoutRepository : IWorkoutRepository
                         Weight = updatedSet.Weight
                     };
                     exercise.Sets.Add(newSet);
+                    _dbContext.Sets.Add(newSet);
                 }
             }
 
-            _dbContext.Exercises.Update(exercise);
+            //_dbContext.Exercises.Update(exercise);
             await _dbContext.SaveChangesAsync();
 
             _logger.LogInformation("Exercise updated successfully");

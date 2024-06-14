@@ -8,4 +8,5 @@ public class UpdateWorkoutDto
     public bool IsLiked { get; set; }
     public string UpdatedAt { get; set; }
     public List<UpdateExerciseDto> Exercises { get; set; }
+    //public byte[] RowVersion { get; set; }
 }
