@@ -198,7 +198,6 @@ public class SQLWorkoutRepository : IWorkoutRepository
 
             _logger.LogInformation($"Updating workout: {workoutId}");
 
-            // Update workout properties
             workout.Name = updateWorkoutDto.Name;
             workout.IsLiked = updateWorkoutDto.IsLiked;
             workout.UpdatedAt = updateWorkoutDto.UpdatedAt;
@@ -272,7 +271,6 @@ public class SQLWorkoutRepository : IWorkoutRepository
                         processedSetIds.Add(set.SetId);
                     }
 
-                    // Delete sets not in updateExercise.Sets
                     var setsToRemove = exercise.Sets.Where(s => !processedSetIds.Contains(s.SetId)).ToList();
                     foreach (var setToRemove in setsToRemove)
                     {
@@ -281,10 +279,9 @@ public class SQLWorkoutRepository : IWorkoutRepository
                         _logger.LogInformation($"Removed set: {setToRemove.SetId}");
                     }
 
-                    processedSetIds.Clear(); // Clear processed sets for the next exercise
+                    processedSetIds.Clear();
                 }
 
-                // Delete exercises not in updateWorkoutDto.Exercises
                 var exercisesToRemove = workout.Exercises.Where(e => !processedExerciseIds.Contains(e.ExerciseId)).ToList();
                 foreach (var exerciseToRemove in exercisesToRemove)
                 {
