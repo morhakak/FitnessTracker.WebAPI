@@ -26,8 +26,6 @@ public class SQLAuthRepository : IAuthRepository
         {
             UserName = registerUserDto.Username,
             Email = registerUserDto.Email,
-            FirstName = registerUserDto.FirstName,
-            LastName = registerUserDto.LastName,
             CreatedAt = DateTime.Now.ToString()
         };
 
@@ -53,28 +51,25 @@ public class SQLAuthRepository : IAuthRepository
         return IdentityResult.Success;
     }
 
-    public async Task<LoginResponseDto> LoginAsync(string username, string password)
+    public async Task<LoginResponseDto> LoginAsync(User user,string password)
     {
-        var existingUser = await _userManager.FindByNameAsync(username);
-
-        if (existingUser == null)
-        {
-            _logger.LogWarning($"Login attempt failed: User '{username}' not found.");
-            return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
-        }
-
-        var passwordValid = await _userManager.CheckPasswordAsync(existingUser, password);
+        var passwordValid = await _userManager.CheckPasswordAsync(user, password);
 
         if (!passwordValid)
         {
-            _logger.LogWarning($"Login attempt failed: Invalid username for user '{username}'.");
+            _logger.LogWarning($"Login attempt failed: Invalid username for user '{user.UserName}'.");
             return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
         }
 
-        var token = _tokenRepository.CreateJwtToken(existingUser);
+        var token = _tokenRepository.CreateJwtToken(user);
 
-        _logger.LogInformation("User '{Username}' successfully logged in.", username);
+        string message = $"User '{user.UserName}' successfully logged in";
+        _logger.LogInformation(message);
 
-        return new LoginResponseDto { IsSuccess = true, Token = token };
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var isAdmin = roles.Any(s => s.ToLower().Contains("admin"));
+
+        return new LoginResponseDto { IsSuccess = true, UserId=user.Id, Username=user.UserName!,Email=user.Email!, IsAdmin=isAdmin, Token = token, Message=message };
     }
 }

@@ -63,6 +63,7 @@ builder.Services.AddDbContext<FitnessTrackerDbContext>(options =>
 
 builder.Services.AddScoped<IAuthRepository, SQLAuthRepository>();
 builder.Services.AddScoped<IWorkoutRepository, SQLWorkoutRepository>();
+builder.Services.AddScoped<IDashboardRepository, SQLDashboardRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 
 builder.Services.AddIdentityCore<User>()

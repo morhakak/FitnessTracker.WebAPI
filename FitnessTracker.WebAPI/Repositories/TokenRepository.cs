@@ -20,8 +20,6 @@ namespace FitnessTracker.WebAPI.Repositories
             var claims = new List<Claim>
             {
                new(ClaimTypes.NameIdentifier,user.Id),
-               new(ClaimTypes.GivenName, user.FirstName),
-               new(ClaimTypes.Surname, user.LastName),
                new(ClaimTypes.Name, user.UserName!),
                new(ClaimTypes.Email, user.Email!),
                new(ClaimTypes.Role, "User")
