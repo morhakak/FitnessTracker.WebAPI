@@ -61,7 +61,7 @@ public class SQLAuthRepository : IAuthRepository
             return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
         }
 
-        var token = _tokenRepository.CreateJwtToken(user);
+        var token = await _tokenRepository.CreateJwtToken(user);
 
         string message = $"User '{user.UserName}' successfully logged in";
         _logger.LogInformation(message);

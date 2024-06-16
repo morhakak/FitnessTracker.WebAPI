@@ -23,7 +23,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     [ValidateModel]
     public async Task<ActionResult<Workout>> CreateWorkout([FromBody] CreateWorkoutRequest createWorkoutRequest)
     {
@@ -46,7 +46,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpDelete("{workoudId}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> DeleteWorkout(Guid workoudId)
     {
         var workout = await _workoutRepository.GetWorkoutByIdAsync(workoudId);
@@ -60,7 +60,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPut("{workoutId}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> UpdateWorkout(Guid workoutId, [FromBody] UpdateWorkoutDto updateWorkoutDto)
     {
         _logger.LogInformation($"Received payload: {JsonSerializer.Serialize(updateWorkoutDto)}");
@@ -76,7 +76,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPut("{workoutId}/toggle-like")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> ToggleLikeWorkout(Guid workoutId)
     {
         var result = await _workoutRepository.ToggleLikeWorkoutAsync(workoutId);
@@ -87,7 +87,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPost("{workoutId}/add-exercise")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<ActionResult<Exercise>> AddExerciseToWorkout(Guid workoutId, [FromBody] CreateExerciseDto exerciseDto)
     {
         try
@@ -111,7 +111,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpDelete("exercise/{exerciseId}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> DeleteExercise(Guid exerciseId)
     {
         var result = await _workoutRepository.DeleteExerciseAsync(exerciseId);
@@ -122,7 +122,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPut("exercise/{exerciseId}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> UpdateExercise(Guid exerciseId, [FromBody] UpdateExerciseDto updateExerciseDto)
     {
         _logger.LogInformation($"Received payload: {JsonSerializer.Serialize(updateExerciseDto)}");
@@ -146,7 +146,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPost("exercise/add-set")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> AddSet([FromBody] AddSetDto addSetDto)
     {
         var set = new Set
@@ -164,7 +164,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpDelete("exercise/delete-set/{setId}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> DeleteSet(Guid setId)
     {
         var result = await _workoutRepository.DeleteSetAsync(setId);
@@ -175,7 +175,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<List<Workout>>> GetAllWorkouts()
     {
         var workouts = await _workoutRepository.GetAllWorkoutsAsync();
@@ -184,7 +184,7 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<ActionResult<Workout>> GetWorkoutById(Guid id)
     {
         var workout = await _workoutRepository.GetWorkoutByIdAsync(id);
@@ -196,10 +196,13 @@ public class WorkoutController : ControllerBase
 
     [Authorize]
     [HttpGet("user")]
-    [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "user,admin")]
     public async Task<ActionResult<List<Workout>>> GetAllWorkoutsByUserId()
     {
         var userId = GetUserId();
+
+        _logger.LogInformation($"User ID: {userId}");
+        _logger.LogInformation($"User Claims: {string.Join(", ", User.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
 
         var workouts = await _workoutRepository.GetAllWorkoutsByUserIdAsync(userId);
 
