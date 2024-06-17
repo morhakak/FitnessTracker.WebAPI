@@ -28,7 +28,8 @@ namespace FitnessTracker.WebAPI.Repositories
             {
                 new(ClaimTypes.NameIdentifier, user.Id),
                 new(ClaimTypes.Name, user.UserName!),
-                new(ClaimTypes.Email, user.Email!)
+                new(ClaimTypes.Email, user.Email!),
+                new("image",user.ImageUrl)
             };
 
             foreach (var role in roles)

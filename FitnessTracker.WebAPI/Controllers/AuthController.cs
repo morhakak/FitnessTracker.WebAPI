@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
             ModelState.AddModelError(string.Empty, error.Description);
         }
 
-        return BadRequest(ModelState);
+        return BadRequest(result.Errors.FirstOrDefault()?.Description);
     }
 
     [HttpPost("Login")]

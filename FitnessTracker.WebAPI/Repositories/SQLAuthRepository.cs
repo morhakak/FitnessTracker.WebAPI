@@ -26,7 +26,8 @@ public class SQLAuthRepository : IAuthRepository
         {
             UserName = registerUserDto.Username,
             Email = registerUserDto.Email,
-            CreatedAt = DateTime.Now.ToString()
+            CreatedAt = DateTime.Now.ToString(),
+            ImageUrl = registerUserDto.ImageUrl,
         };
 
         var identityResult = await _userManager.CreateAsync(user, registerUserDto.Password);
