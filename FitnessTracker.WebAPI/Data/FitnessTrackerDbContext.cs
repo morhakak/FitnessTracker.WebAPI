@@ -15,9 +15,9 @@ public class FitnessTrackerDbContext(DbContextOptions<FitnessTrackerDbContext> o
     {
         base.OnModelCreating(modelBuilder);
 
-        SeedRoles(modelBuilder);
-
         ConfigureRelationships(modelBuilder);
+        SeedRoles(modelBuilder);
+        SeedAdminUser(modelBuilder);
     }
 
     private static void ConfigureRelationships(ModelBuilder modelBuilder)
@@ -66,5 +66,35 @@ public class FitnessTrackerDbContext(DbContextOptions<FitnessTrackerDbContext> o
         };
 
         modelBuilder.Entity<IdentityRole>().HasData(roles);
+    }
+
+    private static void SeedAdminUser(ModelBuilder modelBuilder)
+    {
+        const string AdminUserId = "bfbcaff4-57dc-4568-82c7-5d9437c1c3ee";
+        const string AdminRoleId = "661420f9-2a30-40cf-afa0-edc498392318";
+
+        var hasher = new PasswordHasher<User>();
+        var adminUser = new User
+        {
+            Id = AdminUserId,
+            UserName = "admin",
+            NormalizedUserName = "ADMIN",
+            Email = "admin@admin.com",
+            NormalizedEmail = "ADMIN@ADMIN.COM",
+            EmailConfirmed = true,
+            PasswordHash = hasher.HashPassword(null, "AdminPassword123!"),
+            SecurityStamp = Guid.NewGuid().ToString("D"),
+            CreatedAt = DateTime.Now.ToString()
+        };
+
+        modelBuilder.Entity<User>().HasData(adminUser);
+
+        var adminUserRole = new IdentityUserRole<string>
+        {
+            UserId = AdminUserId,
+            RoleId = AdminRoleId
+        };
+
+        modelBuilder.Entity<IdentityUserRole<string>>().HasData(adminUserRole);
     }
 }

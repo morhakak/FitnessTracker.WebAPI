@@ -4,6 +4,7 @@ using FitnessTracker.WebAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FitnessTracker.WebAPI.Migrations
 {
     [DbContext(typeof(FitnessTrackerDbContext))]
-    partial class FitnessTrackerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240619112101_UpdateAdminDetails")]
+    partial class UpdateAdminDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,17 +151,17 @@ namespace FitnessTracker.WebAPI.Migrations
                         {
                             Id = "bfbcaff4-57dc-4568-82c7-5d9437c1c3ee",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "b93745a0-d85f-4d47-a186-09d1ddc2be65",
-                            CreatedAt = "6/19/2024 2:38:11 PM",
+                            ConcurrencyStamp = "6918a659-0ddd-4237-b0c8-90ebb3c20a08",
+                            CreatedAt = "6/19/2024 2:21:00 PM",
                             Email = "admin@admin.com",
                             EmailConfirmed = true,
                             ImageUrl = "",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@ADMIN.COM",
-                            NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAIAAYagAAAAEA1xXRpb6j5rFWChRPLo5bQ6VXFET+7sMRDrXRcXv1l08YtQcbfCyzZxubfFBgtznA==",
+                            NormalizedUserName = "ADMIN@ADMIN.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAENz5osKXwdlT2lRApBVTOIXPzyoC4k7Um1F/zBLIH60eUJ2tnkh2eW9LxoV3qpvP0Q==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "a150a8d9-ef22-4680-8237-a94b99dd9dd4",
+                            SecurityStamp = "",
                             TwoFactorEnabled = false,
                             UserName = "admin"
                         });
