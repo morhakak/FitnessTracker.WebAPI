@@ -5,20 +5,9 @@ using Microsoft.AspNetCore.Identity;
 
 namespace FitnessTracker.WebAPI.Repositories;
 
-public class SQLAuthRepository : IAuthRepository
+public class SQLAuthRepository(UserManager<User> userManager, ITokenRepository tokenRepository, ILogger<SQLAuthRepository> logger) : IAuthRepository
 {
-    private readonly UserManager<User> _userManager;
-    private readonly IConfiguration _configuration;
-    private readonly ITokenRepository _tokenRepository;
-    private readonly ILogger<SQLAuthRepository> _logger;
-
-    public SQLAuthRepository(UserManager<User> userManager, IConfiguration configuration, ITokenRepository tokenRepository, ILogger<SQLAuthRepository> logger)
-    {
-        _userManager = userManager;
-        _configuration = configuration;
-        _tokenRepository = tokenRepository;
-        _logger = logger;   
-    }
+    private readonly ILogger<SQLAuthRepository> _logger = logger;
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterUserDto registerUserDto)
     {
@@ -30,7 +19,7 @@ public class SQLAuthRepository : IAuthRepository
             ImageUrl = registerUserDto.ImageUrl,
         };
 
-        var identityResult = await _userManager.CreateAsync(user, registerUserDto.Password);
+        var identityResult = await userManager.CreateAsync(user, registerUserDto.Password);
 
         if (!identityResult.Succeeded) 
         {
@@ -39,11 +28,11 @@ public class SQLAuthRepository : IAuthRepository
             return identityResult;
         }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, "User");
+        var roleResult = await userManager.AddToRoleAsync(user, "User");
 
         if (!roleResult.Succeeded)
         {
-            await _userManager.DeleteAsync(user);
+            await userManager.DeleteAsync(user);
 
             _logger.LogError("Adding user to role failed: {Errors}", string.Join(", ", roleResult.Errors.Select(e => e.Description)));
             return roleResult;
@@ -54,7 +43,7 @@ public class SQLAuthRepository : IAuthRepository
 
     public async Task<LoginResponseDto> LoginAsync(User user,string password)
     {
-        var passwordValid = await _userManager.CheckPasswordAsync(user, password);
+        var passwordValid = await userManager.CheckPasswordAsync(user, password);
 
         if (!passwordValid)
         {
@@ -62,12 +51,12 @@ public class SQLAuthRepository : IAuthRepository
             return new LoginResponseDto { IsSuccess = false, ErrorMessage = "Invalid username or password." };
         }
 
-        var token = await _tokenRepository.CreateJwtToken(user);
+        var token = await tokenRepository.CreateJwtToken(user);
 
         string message = $"User '{user.UserName}' successfully logged in";
         _logger.LogInformation(message);
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await userManager.GetRolesAsync(user);
 
         var isAdmin = roles.Any(s => s.ToLower().Contains("admin"));
 

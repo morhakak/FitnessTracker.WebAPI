@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace FitnessTracker.WebAPI.Models.DTOs.Workout;
+﻿namespace FitnessTracker.WebAPI.Models.DTOs.Workout;
 
 public class UpdateWorkoutDto
 {
@@ -8,5 +6,4 @@ public class UpdateWorkoutDto
     public bool IsLiked { get; set; }
     public string UpdatedAt { get; set; }
     public List<UpdateExerciseDto> Exercises { get; set; }
-    //public byte[] RowVersion { get; set; }
 }

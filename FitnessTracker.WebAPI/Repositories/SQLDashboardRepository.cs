@@ -7,27 +7,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FitnessTracker.WebAPI.Repositories;
 
-public class SQLDashboardRepository : IDashboardRepository
+public class SQLDashboardRepository(UserManager<User> userManager, FitnessTrackerDbContext dbContext) : IDashboardRepository
 {
-    private readonly UserManager<User> _userManager;
-    private readonly FitnessTrackerDbContext _dbContext;
-
-    public SQLDashboardRepository(UserManager<User> userManager, FitnessTrackerDbContext dbContext)
-    {
-        _userManager = userManager;
-        _dbContext = dbContext;
-    }
-
     public async Task<bool> DeleteUserAsync(string userId)
     {
-        var user = await _dbContext.Users.FindAsync(userId);
+        var user = await dbContext.Users.FindAsync(userId);
 
         if (user == null)
         {
             return false;
         }
 
-        var result = await _userManager.DeleteAsync(user);
+        var result = await userManager.DeleteAsync(user);
 
         if (!result.Succeeded)
         {
@@ -39,24 +30,24 @@ public class SQLDashboardRepository : IDashboardRepository
 
     public async Task<List<User>> GetAllUsersAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
+        var users = await userManager.Users.ToListAsync();
         return users;
     }
 
     public async Task<List<UserWithRolesDto>> GetAllUsersWithRolesAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
+        var users = await userManager.Users.ToListAsync();
         var userWithRolesDtos = new List<UserWithRolesDto>();
 
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
             userWithRolesDtos.Add(new UserWithRolesDto
             {
                 UserId = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
-                Roles = roles.ToList()
+                Roles = [.. roles]
             });
         }
 

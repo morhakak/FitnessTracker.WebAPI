@@ -6,24 +6,14 @@ namespace FitnessTracker.WebAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class DashboardController : ControllerBase
+public class DashboardController(IDashboardRepository dashboardRepository) : ControllerBase
 {
-    private readonly IDashboardRepository _dashboardRepository;
-
-    public DashboardController(IDashboardRepository dashboardRepository)
-    {
-        _dashboardRepository = dashboardRepository;
-    }
-
     [HttpGet("users")]
     public async Task<ActionResult<List<User>>> GetUsers()
     {
-        var users = await _dashboardRepository.GetAllUsersWithRolesAsync();
+        var users = await dashboardRepository.GetAllUsersWithRolesAsync();
 
-        if (users is null)
-        {
-            return BadRequest();
-        }
+        if (users is null) return BadRequest();
 
         return Ok(users);
     }
@@ -31,12 +21,9 @@ public class DashboardController : ControllerBase
     [HttpDelete("{userId}")]
     public async Task<IActionResult> DeleteUser([FromRoute] string userId)
     {
-        var response = await _dashboardRepository.DeleteUserAsync(userId);
+        var response = await dashboardRepository.DeleteUserAsync(userId);
 
-        if (!response)
-        {
-             return BadRequest(response);
-        }
+        if (!response) return BadRequest(response);
 
         return NoContent();
     }

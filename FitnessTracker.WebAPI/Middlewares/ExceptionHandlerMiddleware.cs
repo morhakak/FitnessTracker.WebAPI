@@ -2,28 +2,21 @@
 
 namespace FitnessTracker.WebAPI.Middlewares;
 
-public class ExceptionHandlerMiddleware
+public class ExceptionHandlerMiddleware(ILogger<ExceptionHandlerMiddleware> logger, RequestDelegate next)
 {
-    private readonly ILogger<ExceptionHandlerMiddleware> _logger;
-    private readonly RequestDelegate _next;
-
-    public ExceptionHandlerMiddleware(ILogger<ExceptionHandlerMiddleware> logger, RequestDelegate next)
-    {
-        _logger = logger;
-        _next = next;
-    }
+    private readonly ILogger<ExceptionHandlerMiddleware> _logger = logger;
 
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
             var errorId = Guid.NewGuid();
 
-            _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, message: ex.Message);
 
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             context.Response.ContentType = "application/json";

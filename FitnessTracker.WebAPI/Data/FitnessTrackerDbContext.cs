@@ -5,9 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FitnessTracker.WebAPI.Data;
 
-public class FitnessTrackerDbContext : IdentityDbContext<User>
+public class FitnessTrackerDbContext(DbContextOptions<FitnessTrackerDbContext> options) : IdentityDbContext<User>(options)
 {
-    public FitnessTrackerDbContext(DbContextOptions<FitnessTrackerDbContext> options) : base(options) {}
     public DbSet<Workout> Workouts { get; set; }
     public DbSet<Exercise> Exercises { get; set; }
     public DbSet<Set> Sets { get; set; }
@@ -52,15 +51,13 @@ public class FitnessTrackerDbContext : IdentityDbContext<User>
 
         var roles = new List<IdentityRole>
         {
-            new IdentityRole
-            {
+            new() {
                 Id = AdminRoleId,
                 Name = AdminName,
                 NormalizedName = AdminName.ToUpper(),
                 ConcurrencyStamp = AdminRoleId
             },
-            new IdentityRole
-            {
+            new() {
                 Id = UserRoleId,
                 Name = UserName,
                 NormalizedName = UserName.ToUpper(),

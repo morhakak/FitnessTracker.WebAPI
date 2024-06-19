@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace FitnessTracker.WebAPI.Models.DTOs.Workout;
+﻿namespace FitnessTracker.WebAPI.Models.DTOs.Workout;
 
 public class ExerciseDto
 {

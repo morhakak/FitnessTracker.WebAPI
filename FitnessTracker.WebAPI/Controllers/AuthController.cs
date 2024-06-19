@@ -10,24 +10,15 @@ namespace FitnessTracker.WebAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController : ControllerBase
+public class AuthController(IAuthRepository authRepository, UserManager<User> userManager, ILogger<SQLAuthRepository> logger) : ControllerBase
 {
-    private readonly IAuthRepository _authRepository;
-    private readonly UserManager<User> _userManager;
-    private readonly ILogger<SQLAuthRepository> _logger;
-
-    public AuthController(IAuthRepository authRepository, UserManager<User> userManager, ILogger<SQLAuthRepository> logger)
-    {
-        _authRepository = authRepository;
-        _userManager = userManager;
-        _logger = logger;
-    }
+    private readonly ILogger<SQLAuthRepository> _logger = logger;
 
     [HttpPost("Register")]
     [ValidateModel]
     public async Task<ActionResult> Register([FromBody] RegisterUserDto registerRequestDto)
     {
-        var result = await _authRepository.RegisterUserAsync(registerRequestDto);
+        var result = await authRepository.RegisterUserAsync(registerRequestDto);
 
         if (result.Succeeded)
         {
@@ -46,7 +37,7 @@ public class AuthController : ControllerBase
     [ValidateModel]
     public async Task<IActionResult> Login([FromBody] LoginUserDto loginUserDto)
     {
-        var existingUser = await _userManager.FindByNameAsync(loginUserDto.Username);
+        var existingUser = await userManager.FindByNameAsync(loginUserDto.Username);
 
         if (existingUser == null)
         {
@@ -54,13 +45,13 @@ public class AuthController : ControllerBase
             return NotFound();
         }
 
-        var res = await _authRepository.LoginAsync(existingUser, loginUserDto.Password);
+        var res = await authRepository.LoginAsync(existingUser, loginUserDto.Password);
 
         if (res.IsSuccess is not true)
         {
             return Unauthorized(new { Message = res.ErrorMessage });
         }
 
-        return Ok(new { res.Token, res.UserId, res.Username, res.Email,res.IsAdmin, res.Message});
+        return Ok(new { res.Token, res.UserId, res.Username, res.Email,res.IsAdmin, res.Message, res.CreatedAt});
     }
 }

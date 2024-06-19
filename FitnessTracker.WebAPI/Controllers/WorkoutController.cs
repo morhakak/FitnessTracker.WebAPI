@@ -11,16 +11,9 @@ namespace FitnessTracker.WebAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class WorkoutController : ControllerBase
+public class WorkoutController(IWorkoutRepository workoutRepository, ILogger<WorkoutController> logger) : ControllerBase
 {
-    private readonly IWorkoutRepository _workoutRepository;
-    private readonly ILogger<WorkoutController> _logger;
-
-    public WorkoutController(IWorkoutRepository workoutRepository, ILogger<WorkoutController> logger)
-    {
-        _workoutRepository = workoutRepository;
-        _logger = logger;
-    }
+    private readonly ILogger<WorkoutController> _logger = logger;
 
     [HttpPost]
     [Authorize(Roles = "user,admin")]
@@ -38,10 +31,10 @@ public class WorkoutController : ControllerBase
             Name = createWorkoutRequest.Name,
             CreatedAt = DateTime.Now.ToString(),
             IsLiked = false,
-            Exercises = new List<Exercise>()
+            Exercises = []
         };
 
-        var createdWorkout = await _workoutRepository.CreateWorkoutAsync(workout);
+        var createdWorkout = await workoutRepository.CreateWorkoutAsync(workout);
         return CreatedAtAction(nameof(GetWorkoutById), new { id = createdWorkout.WorkoutId }, createdWorkout);
     }
 
@@ -49,13 +42,13 @@ public class WorkoutController : ControllerBase
     [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> DeleteWorkout(Guid workoudId)
     {
-        var workout = await _workoutRepository.GetWorkoutByIdAsync(workoudId);
+        var workout = await workoutRepository.GetWorkoutByIdAsync(workoudId);
         if (workout == null)
         {
             return NotFound();
         }
 
-        await _workoutRepository.DeleteWorkoutAsync(workoudId);
+        await workoutRepository.DeleteWorkoutAsync(workoudId);
         return NoContent();
     }
 
@@ -65,7 +58,7 @@ public class WorkoutController : ControllerBase
     {
         _logger.LogInformation($"Received payload: {JsonSerializer.Serialize(updateWorkoutDto)}");
 
-        var result = await _workoutRepository.UpdateWorkoutAsync(workoutId, updateWorkoutDto);
+        var result = await workoutRepository.UpdateWorkoutAsync(workoutId, updateWorkoutDto);
 
         if (!result)
         {
@@ -79,97 +72,9 @@ public class WorkoutController : ControllerBase
     [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> ToggleLikeWorkout(Guid workoutId)
     {
-        var result = await _workoutRepository.ToggleLikeWorkoutAsync(workoutId);
+        var result = await workoutRepository.ToggleLikeWorkoutAsync(workoutId);
 
         if (!result) return NotFound();
-
-        return Ok();
-    }
-
-    [HttpPost("{workoutId}/add-exercise")]
-    [Authorize(Roles = "user,admin")]
-    public async Task<ActionResult<Exercise>> AddExerciseToWorkout(Guid workoutId, [FromBody] CreateExerciseDto exerciseDto)
-    {
-        try
-        {
-            var exercise = new Exercise
-            {
-                ExerciseId = Guid.NewGuid(),
-                Name = exerciseDto.Name,
-                WorkoutId = workoutId,
-                CreatedAt = DateTime.Now.ToString()
-            };
-
-            await _workoutRepository.AddExerciseToWorkoutAsync(workoutId, exercise);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while adding exercise to workout.");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpDelete("exercise/{exerciseId}")]
-    [Authorize(Roles = "user,admin")]
-    public async Task<IActionResult> DeleteExercise(Guid exerciseId)
-    {
-        var result = await _workoutRepository.DeleteExerciseAsync(exerciseId);
-
-        if (!result) return BadRequest();
-
-        return Ok();
-    }
-
-    [HttpPut("exercise/{exerciseId}")]
-    [Authorize(Roles = "user,admin")]
-    public async Task<IActionResult> UpdateExercise(Guid exerciseId, [FromBody] UpdateExerciseDto updateExerciseDto)
-    {
-        _logger.LogInformation($"Received payload: {JsonSerializer.Serialize(updateExerciseDto)}");
-
-        try
-        {
-            var result = await _workoutRepository.UpdateExerciseAsync(exerciseId, updateExerciseDto);
-
-            if (!result)
-            {
-                return NotFound("Exercise not found");
-            }
-
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating exercise");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpPost("exercise/add-set")]
-    [Authorize(Roles = "user,admin")]
-    public async Task<IActionResult> AddSet([FromBody] AddSetDto addSetDto)
-    {
-        var set = new Set
-        {
-            ExerciseId = addSetDto.ExerciseId,
-            SetId = Guid.NewGuid(),
-            CreatedAt = DateTime.Now.ToString()
-        };
-
-       var result =  await _workoutRepository.AddSetToExerciseAsync(set, addSetDto);
-
-        if(!result) return BadRequest();
-
-        return Ok();
-    }
-
-    [HttpDelete("exercise/delete-set/{setId}")]
-    [Authorize(Roles = "user,admin")]
-    public async Task<IActionResult> DeleteSet(Guid setId)
-    {
-        var result = await _workoutRepository.DeleteSetAsync(setId);
-
-        if (!result) return BadRequest();
 
         return Ok();
     }
@@ -178,7 +83,7 @@ public class WorkoutController : ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<List<Workout>>> GetAllWorkouts()
     {
-        var workouts = await _workoutRepository.GetAllWorkoutsAsync();
+        var workouts = await workoutRepository.GetAllWorkoutsAsync();
 
         return Ok(workouts);
     }
@@ -187,7 +92,7 @@ public class WorkoutController : ControllerBase
     [Authorize(Roles = "user,admin")]
     public async Task<ActionResult<Workout>> GetWorkoutById(Guid id)
     {
-        var workout = await _workoutRepository.GetWorkoutByIdAsync(id);
+        var workout = await workoutRepository.GetWorkoutByIdAsync(id);
 
         if (workout == null) return NotFound();
 
@@ -204,7 +109,7 @@ public class WorkoutController : ControllerBase
         _logger.LogInformation($"User ID: {userId}");
         _logger.LogInformation($"User Claims: {string.Join(", ", User.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
 
-        var workouts = await _workoutRepository.GetAllWorkoutsByUserIdAsync(userId);
+        var workouts = await workoutRepository.GetAllWorkoutsByUserIdAsync(userId);
 
         return Ok(workouts);
     }

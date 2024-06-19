@@ -2,34 +2,25 @@
 using FitnessTracker.WebAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace FitnessTracker.WebAPI.Repositories
 {
-    public class TokenRepository : ITokenRepository
+    public class TokenRepository(IConfiguration configuration, UserManager<User> userManager) : ITokenRepository
     {
-        private readonly IConfiguration _configuration;
-        private readonly UserManager<User> _userManager; 
-
-        public TokenRepository(IConfiguration configuration, UserManager<User> userManager)
-        {
-            _configuration = configuration;
-            _userManager = userManager;
-        }
-
         public async Task<string> CreateJwtToken(User user)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
 
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id),
                 new(ClaimTypes.Name, user.UserName!),
                 new(ClaimTypes.Email, user.Email!),
-                new("image",user.ImageUrl)
+                new("image",user.ImageUrl),
+                new("createdAt",user.CreatedAt)
             };
 
             foreach (var role in roles)
@@ -37,13 +28,13 @@ namespace FitnessTracker.WebAPI.Repositories
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var jwtSecurityToken = new JwtSecurityToken(
-                _configuration["Jwt:Issuer"], 
-                _configuration["Jwt:Audience"], 
+                configuration["Jwt:Issuer"], 
+                configuration["Jwt:Audience"], 
                 claims, 
                 expires: DateTime.Now.AddDays(30),
                 signingCredentials: credentials);
